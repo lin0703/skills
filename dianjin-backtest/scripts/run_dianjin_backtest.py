@@ -68,6 +68,8 @@ def build_manual(code, name, anchor_row, history_rows, initial_capital, capital_
         sell_price = round(buy_price * (1 + profit_target), 3)
         budget = initial_capital * ratio
         lots = math.floor(budget / (buy_price * 100))
+        if lots < 1:
+            lots = 1
         tiers.append({
             'tier': idx + 1,
             'ratio': ratio,
@@ -98,8 +100,10 @@ def run_backtest(rows, manual, initial_capital, end_date, commission_rate, stamp
     anchor_date = manual['anchor_date']
     active_rows = [r for r in rows if r['date'] > anchor_date and r['date'] <= end_date]
 
+    def holding_value(close_price):
+        return sum(h['shares'] * close_price for h in holdings.values())
+
     for row in active_rows:
-        opened_today = set()
         for tier in manual['tiers']:
             key = tier['tier']
             h = holdings.get(key)
@@ -117,6 +121,9 @@ def run_backtest(rows, manual, initial_capital, end_date, commission_rate, stamp
                 cost_basis = h['buy_cost_total']
                 profit = net - cost_basis
                 realized_profit += profit
+                del holdings[key]
+                position_value_after = holding_value(row['close'])
+                total_assets_after = available_cash + position_value_after
                 trades.append({
                     'date': row['date'],
                     'action': 'SELL',
@@ -124,10 +131,11 @@ def run_backtest(rows, manual, initial_capital, end_date, commission_rate, stamp
                     'price': round(sell_price, 4),
                     'shares': shares,
                     'cash_after': round(available_cash, 2),
+                    'position_value_after': round(position_value_after, 2),
+                    'total_assets_after': round(total_assets_after, 2),
                     'realized_profit': round(realized_profit, 2),
                     'trade_profit': round(profit, 2),
                 })
-                del holdings[key]
 
         for tier in manual['tiers']:
             key = tier['tier']
@@ -148,7 +156,8 @@ def run_backtest(rows, manual, initial_capital, end_date, commission_rate, stamp
                         'target_sell': tier['sell_price'],
                         'buy_cost_total': total_cost,
                     }
-                    opened_today.add(key)
+                    position_value_after = holding_value(row['close'])
+                    total_assets_after = available_cash + position_value_after
                     trades.append({
                         'date': row['date'],
                         'action': 'BUY',
@@ -156,6 +165,8 @@ def run_backtest(rows, manual, initial_capital, end_date, commission_rate, stamp
                         'price': round(buy_price, 4),
                         'shares': shares,
                         'cash_after': round(available_cash, 2),
+                        'position_value_after': round(position_value_after, 2),
+                        'total_assets_after': round(total_assets_after, 2),
                         'realized_profit': round(realized_profit, 2),
                         'trade_profit': '',
                     })
@@ -190,7 +201,7 @@ def write_outputs(base_dir, manual, result):
     with open(os.path.join(out_dir, 'summary.json'), 'w', encoding='utf-8') as f:
         json.dump(result['summary'], f, ensure_ascii=False, indent=2)
     with open(os.path.join(out_dir, 'trades.csv'), 'w', encoding='utf-8', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['date', 'action', 'tier', 'price', 'shares', 'cash_after', 'realized_profit', 'trade_profit'])
+        writer = csv.DictWriter(f, fieldnames=['date', 'action', 'tier', 'price', 'shares', 'cash_after', 'position_value_after', 'total_assets_after', 'realized_profit', 'trade_profit'])
         writer.writeheader()
         for trade in result['trades']:
             writer.writerow(trade)
@@ -212,7 +223,7 @@ def main():
     ap.add_argument('--anchor-date', required=True)
     ap.add_argument('--end-date', required=True)
     ap.add_argument('--initial-capital', type=float, default=50000)
-    ap.add_argument('--capital-ratio', default='[0.3,0.2,0.2,0.3]')
+    ap.add_argument('--capital-ratio', default='[0.1,0.2,0.3,0.4]')
     ap.add_argument('--profit-target', type=float, default=0.06)
     ap.add_argument('--commission-rate', type=float, default=0.0003)
     ap.add_argument('--stamp-duty', type=float, default=0.0005)
