@@ -1,0 +1,4 @@
+interface:
+  display_name: "财务分析技能"
+  short_description: "季度利润分析 demo 的趋势与对比工作流。"
+  default_prompt: "使用这个技能执行季度趋势、同比或环比分析，并返回适合图表展示的结果。"

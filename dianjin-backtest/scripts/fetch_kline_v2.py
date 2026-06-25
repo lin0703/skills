@@ -59,15 +59,20 @@ def fetch_baostock(code: str, start: str, end: str):
     if lg.error_code != '0':
         raise RuntimeError(f'baostock login failed: {lg.error_msg}')
     try:
-        rs = bs.query_history_k_data_plus(meta['baostock'], 'date,code,open,high,low,close,volume', start_date=f'{start[:4]}-{start[4:6]}-{start[6:8]}', end_date=f'{end[:4]}-{end[4:6]}-{end[6:8]}', frequency='d', adjustflag='2')
+        start_fmt = start if '-' in start else f'{start[:4]}-{start[4:6]}-{start[6:8]}'
+        end_fmt = end if '-' in end else f'{end[:4]}-{end[4:6]}-{end[6:8]}'
+        rs = bs.query_history_k_data_plus(meta['baostock'], 'date,code,open,high,low,close,volume', start_date=start_fmt, end_date=end_fmt, frequency='d', adjustflag='2')
         if rs.error_code != '0':
             raise RuntimeError(f'baostock query failed: {rs.error_msg}')
         rows = []
         while rs.next():
             date, _, open_p, high_p, low_p, close_p, volume = rs.get_row_data()
+            if '' in (open_p, high_p, low_p, close_p):
+                continue
             low_v = float(low_p)
             high_v = float(high_p)
-            rows.append({'date': date, 'open': float(open_p), 'close': float(close_p), 'high': high_v, 'low': low_v, 'volume': float(volume), 'amount': 0.0, 'amplitude_pct': 0.0 if low_v == 0 else (high_v-low_v)/low_v*100})
+            volume_v = float(volume) if volume != '' else 0.0
+            rows.append({'date': date, 'open': float(open_p), 'close': float(close_p), 'high': high_v, 'low': low_v, 'volume': volume_v, 'amount': 0.0, 'amplitude_pct': 0.0 if low_v == 0 else (high_v-low_v)/low_v*100})
         if not rows:
             raise RuntimeError('baostock returned no rows')
         return {'source': 'baostock', 'code': meta['pure'], 'name': meta['pure'], 'rows': rows}

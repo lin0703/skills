@@ -1,0 +1,4 @@
+interface:
+  display_name: "异常检测技能"
+  short_description: "季度利润分析 demo 的异常检测工作流。"
+  default_prompt: "使用这个技能判断季度利润结果是否异常，并解释历史基线和偏离程度。"

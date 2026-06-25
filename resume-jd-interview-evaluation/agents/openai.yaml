@@ -1,0 +1,4 @@
+interface:
+  display_name: "大数据开发面试评价"
+  short_description: "基于面试问答生成事实型大数据开发技术评价"
+  default_prompt: "Use $resume-jd-interview-evaluation to generate a professional, fact-based Chinese 大数据开发面试评价. Base technical ratings only on actual interview answers; use resume/JD only for profile, work history, and role direction."

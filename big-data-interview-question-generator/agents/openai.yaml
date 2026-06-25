@@ -1,0 +1,4 @@
+interface:
+  display_name: "大数据面试题生成器"
+  short_description: "Generate 1-hour big data warehouse interview outlines"
+  default_prompt: "Use $big-data-interview-question-generator to generate a local Markdown file with a 1-hour big data warehouse interview outline from a JD and resume."

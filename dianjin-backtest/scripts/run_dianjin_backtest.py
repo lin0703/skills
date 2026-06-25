@@ -7,6 +7,8 @@ import os
 import sys
 from datetime import datetime
 
+from dianjin_grid_selector import score_stock
+
 
 def load_rows(csv_path):
     rows = []
@@ -39,28 +41,31 @@ def median(nums):
     return (seq[mid - 1] + seq[mid]) / 2
 
 
-def build_manual(code, name, anchor_row, history_rows, initial_capital, capital_ratio, profit_target):
-    daily_amplitudes = [r['amplitude_pct'] / 100.0 for r in history_rows[-60:]] or [anchor_row['amplitude_pct'] / 100.0]
-    weekly_amplitudes = []
-    weekly_changes = []
-    week_bucket = []
-    for row in history_rows:
-        week_bucket.append(row)
-        if len(week_bucket) == 5:
-            high = max(x['high'] for x in week_bucket)
-            low = min(x['low'] for x in week_bucket)
-            first_close = week_bucket[0]['close']
-            last_close = week_bucket[-1]['close']
-            if low > 0 and first_close > 0:
-                weekly_amplitudes.append((high - low) / low)
-                weekly_changes.append(abs(last_close - first_close) / first_close)
-            week_bucket = []
-    if not weekly_amplitudes:
-        weekly_amplitudes = daily_amplitudes
-    if not weekly_changes:
-        weekly_changes = [abs(anchor_row['close'] - history_rows[max(0, len(history_rows)-2)]['close']) / history_rows[max(0, len(history_rows)-2)]['close']] if len(history_rows) > 1 else [0.03]
+def build_manual(code, name, anchor_row, history_rows, initial_capital, capital_ratio, profit_target, grid_width_override=None):
+    if grid_width_override is None:
+        daily_amplitudes = [r['amplitude_pct'] / 100.0 for r in history_rows[-60:]] or [anchor_row['amplitude_pct'] / 100.0]
+        weekly_amplitudes = []
+        weekly_changes = []
+        week_bucket = []
+        for row in history_rows:
+            week_bucket.append(row)
+            if len(week_bucket) == 5:
+                high = max(x['high'] for x in week_bucket)
+                low = min(x['low'] for x in week_bucket)
+                first_close = week_bucket[0]['close']
+                last_close = week_bucket[-1]['close']
+                if low > 0 and first_close > 0:
+                    weekly_amplitudes.append((high - low) / low)
+                    weekly_changes.append(abs(last_close - first_close) / first_close)
+                week_bucket = []
+        if not weekly_amplitudes:
+            weekly_amplitudes = daily_amplitudes
+        if not weekly_changes:
+            weekly_changes = [abs(anchor_row['close'] - history_rows[max(0, len(history_rows)-2)]['close']) / history_rows[max(0, len(history_rows)-2)]['close']] if len(history_rows) > 1 else [0.03]
 
-    grid_width = max(0.03, min(0.15, (median(daily_amplitudes) * 0.35 + median(weekly_amplitudes) * 0.4 + median(weekly_changes) * 0.25)))
+        grid_width = max(0.03, min(0.15, (median(daily_amplitudes) * 0.35 + median(weekly_amplitudes) * 0.4 + median(weekly_changes) * 0.25)))
+    else:
+        grid_width = grid_width_override
     base_price = anchor_row['close']
     tiers = []
     for idx, ratio in enumerate(capital_ratio):
@@ -230,6 +235,7 @@ def main():
     ap.add_argument('--slippage', type=float, default=0.01)
     ap.add_argument('--clear-on-flat', action='store_true')
     ap.add_argument('--base-dir', default=os.path.expanduser('~/workspace/tushare'))
+    ap.add_argument('--grid-width', type=float, default=None)
     args = ap.parse_args()
 
     rows = load_rows(args.csv_path)
@@ -238,10 +244,12 @@ def main():
     if not history_rows:
         raise RuntimeError('No history rows found up to anchor date')
     anchor_row = history_rows[-1]
-    manual = build_manual(args.code, args.name or args.code, anchor_row, history_rows, args.initial_capital, ratio, args.profit_target)
+    selector = score_stock(rows, args.anchor_date)
+    resolved_grid_width = args.grid_width if args.grid_width is not None else selector['suggestion']['grid_width']
+    manual = build_manual(args.code, args.name or args.code, anchor_row, history_rows, args.initial_capital, ratio, args.profit_target, resolved_grid_width)
     result = run_backtest(rows, manual, args.initial_capital, args.end_date, args.commission_rate, args.stamp_duty, args.slippage, args.clear_on_flat)
     out_dir = write_outputs(os.path.join(args.base_dir, args.code.replace('.SZ','').replace('.SH','')), manual, result)
-    print(json.dumps({'out_dir': out_dir, 'manual': manual, 'summary': result['summary']}, ensure_ascii=False, indent=2))
+    print(json.dumps({'out_dir': out_dir, 'selector': selector, 'manual': manual, 'summary': result['summary']}, ensure_ascii=False, indent=2))
 
 
 if __name__ == '__main__':

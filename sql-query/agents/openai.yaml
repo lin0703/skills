@@ -1,0 +1,4 @@
+interface:
+  display_name: "查数技能"
+  short_description: "季度利润分析 demo 的查数工作流。"
+  default_prompt: "使用这个技能解析季度利润问题，调用财务 MCP 工具完成查数，并返回可用于表格展示的结果。"
