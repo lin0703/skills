@@ -12,7 +12,7 @@ description: 跟踪“鳄鱼股票跟踪”飞书表格中的 A 股股票，定�
 当前默认目标：
 - 飞书表格：`https://lcn0b63y6ed6.feishu.cn/wiki/Zmllw42m9inZ5bkVUqecj7bCn0f`
 - 脚本：`scripts/stock_sheet_sync.py`
-- 日志：`/root/.openclaw/workspace/state/stock_sheet_sync.log`
+- 日志：`/home/ubuntu/.hermes/state/stock_sheet_sync.log`
 
 ## 工作流
 
@@ -26,7 +26,7 @@ description: 跟踪“鳄鱼股票跟踪”飞书表格中的 A 股股票，定�
 直接运行：
 
 ```bash
-/usr/bin/python3 /root/.openclaw/workspace/skills/eyu-gupiao-genzong/scripts/stock_sheet_sync.py
+/usr/bin/python3 /home/ubuntu/.hermes/skills/lin0703-skills/eyu-gupiao-genzong/scripts/stock_sheet_sync.py
 ```
 
 成功后会把表格按“相对买入价涨跌幅”从低到高重排，并更新：
@@ -54,9 +54,9 @@ description: 跟踪“鳄鱼股票跟踪”飞书表格中的 A 股股票，定�
 当前推荐配置，只在 A 股交易时段执行：
 
 ```cron
-*/5 9-11 * * 1-5 /usr/bin/python3 /root/.openclaw/workspace/skills/eyu-gupiao-genzong/scripts/stock_sheet_sync.py >> /root/.openclaw/workspace/state/stock_sheet_sync.log 2>&1
-*/5 13-14 * * 1-5 /usr/bin/python3 /root/.openclaw/workspace/skills/eyu-gupiao-genzong/scripts/stock_sheet_sync.py >> /root/.openclaw/workspace/state/stock_sheet_sync.log 2>&1
-0 15 * * 1-5 /usr/bin/python3 /root/.openclaw/workspace/skills/eyu-gupiao-genzong/scripts/stock_sheet_sync.py >> /root/.openclaw/workspace/state/stock_sheet_sync.log 2>&1
+*/5 9-11 * * 1-5 /usr/bin/python3 /home/ubuntu/.hermes/skills/lin0703-skills/eyu-gupiao-genzong/scripts/stock_sheet_sync.py >> /home/ubuntu/.hermes/state/stock_sheet_sync.log 2>&1
+*/5 13-14 * * 1-5 /usr/bin/python3 /home/ubuntu/.hermes/skills/lin0703-skills/eyu-gupiao-genzong/scripts/stock_sheet_sync.py >> /home/ubuntu/.hermes/state/stock_sheet_sync.log 2>&1
+0 15 * * 1-5 /usr/bin/python3 /home/ubuntu/.hermes/skills/lin0703-skills/eyu-gupiao-genzong/scripts/stock_sheet_sync.py >> /home/ubuntu/.hermes/state/stock_sheet_sync.log 2>&1
 ```
 
 ### 4. 行情源规则
